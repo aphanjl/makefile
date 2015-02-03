@@ -6,27 +6,15 @@ ifndef $(OUT_DIR)
 OUT_DIR := out
 endif 
 
-LOC_DIRS := . 
+INCLUDE_DIRS := . \
+base \
+module
 
-INCLUDE_DIRS := $(LOC_DIRS) \
-../module1/base \
-../module1/module \
-../module2/base \
-../module2/module
+SOURCE_DIRS  += $(INCLUDE_DIRS)
+OBJ_DIR := $(PROJECT_DIR)/$(OUT_DIR)/module2
 
-SOURCE_DIRS  := $(LOC_DIRS)
-
-OBJ_DIR := $(PROJECT_DIR)/$(OUT_DIR)/main
-
-TARGET := aphan
+TARGET := libModule2.so
 TARGET_DIR := $(PROJECT_DIR)/$(OUT_DIR)/bin
-
-LIBS_DIRS := $(TARGET_DIR)
-LIBS := Module1 \
-Module2
-
-CLIBFLAG += $(addprefix -L, $(LIBS_DIRS))
-CLIBFLAG += $(addprefix -l, $(LIBS))
 
 SRCS := $(foreach dir, $(SOURCE_DIRS), $(wildcard $(dir)/*.cpp))
 SRCS_FILES := $(notdir $(SRCS))
@@ -35,9 +23,7 @@ INCLUDES := $(addprefix -I, $(INCLUDE_DIRS))
 
 define make-goal
 $(OBJ_DIR)/%.o:$(1)/%.cpp
-	$(CC)  $(INCLUDES) -c $$< -o $$@
-	@echo $$<
-	@echo $$@
+	$(CC)  $(INCLUDES) -c -fPIC  $$< -o $$@
 endef
 
 .PHONY: all checkdir clean
@@ -51,11 +37,13 @@ $(OBJ_DIR):
 $(TARGET_DIR):
 	@mkdir -p $@
 clean:
-	cd $(PROJECT_DIR) && rm -rf $(OUT_DIR)
+	cd $(PROJECT_DIR) && \
+	rm -f $(OUT_DIR)/bin/$(TARGET) && \
+	rm -rf $(OUT_DIR)/module2
 	
 OBJS_ALL := $(addprefix $(OBJ_DIR)/, $(OBJS))
 
 $(TARGET):$(OBJS_ALL)
-	$(CC) $^ -o $(TARGET_DIR)/$@ $(CLIBFLAG)
+	$(CC) $^ -shared -o $(TARGET_DIR)/$@
 
 $(foreach out, $(SOURCE_DIRS),$(eval $(call make-goal,$(out))))
